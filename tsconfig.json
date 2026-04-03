@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    // 📁 Output
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    // ⚙️ Node environment
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "types": ["node"],
+
+    // 🧠 Strictness (must-have)
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // 🚀 DX + compatibility
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+
+    // 🔗 Path alias
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"]
+    }
+  }
+}
