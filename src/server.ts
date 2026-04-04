@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { errorHandler } from '@/app/middlewares/error.middleware.js';
 import { connectDB } from '@/infrastructure/database/mongoose.js';
+import { apiLimiter, authLimiter } from '@/app/middlewares/ratelimiter.middleware.js';
 
 await connectDB();
 
@@ -17,13 +18,13 @@ app.use(cors());
 app.use(helmet());
 app.use(compression());
 
-app.use('/auth', authRoutes);
+app.use('/auth', authLimiter, authRoutes);
 
-app.get('/health', (_, res) => {
+app.get('/health', apiLimiter, (_, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-app.get('/error', () => {
+app.get('/error', apiLimiter, () => {
   throw new Error('Test error');
 });
 
