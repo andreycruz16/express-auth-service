@@ -1,5 +1,5 @@
+import '@/config/env.js';
 import express from 'express';
-import dotenv from 'dotenv';
 import authRoutes from './features/auth/auth.route.js';
 import { logger } from './infrastructure/logger/logger.js';
 import { pinoHttp } from 'pino-http';
@@ -7,12 +7,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import { errorHandler } from '@/app/middlewares/error.middleware.js';
+import { connectDB } from '@/infrastructure/database/mongoose.js';
 
-const env = process.env.NODE_ENV || 'development';
-dotenv.config({
-  path: `.env.${env}`,
-});
-console.log(`Running in ${env} environment`);
+await connectDB();
 
 const app = express();
 app.use(pinoHttp());
