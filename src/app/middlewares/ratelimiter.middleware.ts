@@ -9,5 +9,5 @@ export const apiLimiter = rateLimit({
 // Rate limiter for authentication routes
 export const authLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 5,
+  max: 10,
 });
