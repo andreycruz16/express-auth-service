@@ -1,10 +1,10 @@
-import pino from "pino";
+import pino from 'pino';
 
 const loggerOptions =
-  process.env.NODE_ENV !== "production"
+  process.env.NODE_ENV !== 'production'
     ? {
         transport: {
-          target: "pino-pretty",
+          target: 'pino-pretty',
         },
       }
     : {};
