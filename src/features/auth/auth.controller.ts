@@ -17,3 +17,9 @@ export const login = async (req: Request, res: Response) => {
 
   res.json(success(data));
 };
+
+export const getMe = async (req: Request, res: Response) => {
+  const user = (req as Request & { user?: any }).user;
+
+  res.json(success(user));
+};
