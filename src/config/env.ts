@@ -14,9 +14,13 @@ if (!process.env.JWT_SECRET) {
   throw new Error('❌ JWT_SECRET is not defined');
 }
 
+if (!process.env.PORT) {
+  throw new Error('❌ PORT is not defined');
+}
+
 export const env = {
   NODE_ENV: nodeEnv,
-  PORT: Number(process.env.PORT ?? 3000),
+  PORT: process.env.PORT,
   MONGO_URI: process.env.MONGO_URI,
   JWT_SECRET: process.env.JWT_SECRET,
 };

@@ -6,3 +6,7 @@ export const registerSchema = z.object({
 });
 
 export const loginSchema = registerSchema;
+
+export const refreshSchema = z.object({
+  refreshToken: z.string().min(1),
+});
