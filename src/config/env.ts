@@ -1,12 +1,11 @@
-import { logger } from '@/infrastructure/logger/logger.js';
+import { logger } from '@/infrastructure/logger.js';
 import dotenv from 'dotenv';
 
-const env = process.env.NODE_ENV ?? 'development';
-dotenv.config({ path: `.env.${env}` });
+const nodeEnv = process.env.NODE_ENV ?? 'development';
+dotenv.config({ path: `.env.${nodeEnv}` });
 
-logger.info(`🌱 Loaded env: .env.${env}`);
+logger.info(`Loaded env file: .env.${nodeEnv}`);
 
-// Optional: validate required envs
 if (!process.env.MONGO_URI) {
   throw new Error('❌ MONGO_URI is not defined');
 }
@@ -14,3 +13,10 @@ if (!process.env.MONGO_URI) {
 if (!process.env.JWT_SECRET) {
   throw new Error('❌ JWT_SECRET is not defined');
 }
+
+export const env = {
+  NODE_ENV: nodeEnv,
+  PORT: Number(process.env.PORT ?? 3000),
+  MONGO_URI: process.env.MONGO_URI,
+  JWT_SECRET: process.env.JWT_SECRET,
+};

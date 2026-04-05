@@ -1,36 +1,13 @@
 import '@/config/env.js';
-import express from 'express';
-import authRoutes from './features/auth/auth.route.js';
-import { logger, httpLogger } from './infrastructure/logger/logger.js';
-import cors from 'cors';
-import helmet from 'helmet';
-import compression from 'compression';
-import { errorHandler } from '@/app/middlewares/error.middleware.js';
-import { connectDB } from '@/infrastructure/database/mongoose.js';
-import { apiLimiter, authLimiter } from '@/app/middlewares/ratelimiter.middleware.js';
+import { env } from '@/config/env.js';
+import { createApp } from '@/app/app.js';
+import { connectDB } from '@/infrastructure/db.js';
+import { logger } from '@/infrastructure/logger.js';
 
-await connectDB();
+await connectDB(env.MONGO_URI);
 
-const app = express();
-app.use(httpLogger);
-app.use(express.json());
-app.use(cors());
-app.use(helmet());
-app.use(compression());
+const app = createApp();
 
-app.use('/auth', authLimiter, authRoutes);
-
-app.get('/health', apiLimiter, (_, res) => {
-  res.status(200).json({ status: 'ok' });
-});
-
-app.get('/error', apiLimiter, () => {
-  throw new Error('Test error');
-});
-
-app.use(errorHandler);
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
+app.listen(env.PORT, () => {
+  logger.info({ port: env.PORT }, 'Auth service is running');
 });

@@ -1,28 +1,24 @@
-import { Request, Response, NextFunction } from 'express';
-import { logger } from '@/infrastructure/logger/logger.js';
+import type { NextFunction, Request, Response } from 'express';
+import { env } from '@/config/env.js';
+import { logger } from '@/infrastructure/logger.js';
+import { AppError } from '@/shared/app-error.js';
 
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
-  const isProd = process.env.NODE_ENV === 'production';
-
   let status = 500;
   let message = 'Internal Server Error';
 
-  if (err instanceof Error) {
+  if (err instanceof AppError) {
+    status = err.status;
     message = err.message;
-
-    // optional: support custom status
-    status = (err as any).status || 500;
+  } else if (err instanceof Error) {
+    message = err.message;
   }
 
-  logger.error({
-    err,
-    message,
-    status,
-  });
+  logger.error({ err, status, message }, 'Request failed');
 
   res.status(status).json({
     success: false,
-    message: isProd ? 'Internal Server Error' : message,
-    ...(isProd ? {} : { stack: err instanceof Error ? err.stack : undefined }),
+    message: env.NODE_ENV === 'production' ? 'Internal Server Error' : message,
+    ...(env.NODE_ENV === 'production' ? {} : { stack: err instanceof Error ? err.stack : undefined }),
   });
 }

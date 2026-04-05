@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import type { NextFunction, Request, Response } from 'express';
+import { z } from 'zod';
 
 export const validate =
   <T>(schema: z.ZodType<T>) =>
@@ -9,7 +9,7 @@ export const validate =
     if (!result.success) {
       return res.status(400).json({
         success: false,
-        message: "Validation error",
+        message: 'Validation error',
         errors: result.error.flatten(),
       });
     }
