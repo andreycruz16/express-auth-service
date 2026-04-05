@@ -2,6 +2,7 @@ import pino from 'pino';
 import { pinoHttp } from 'pino-http';
 
 const isDev = process.env.NODE_ENV !== 'production';
+const redactFields = ['req.headers.authorization'];
 
 export const logger = pino(isDev ? { transport: { target: 'pino-pretty' } } : {});
-export const httpLogger = pinoHttp({});
+export const httpLogger = pinoHttp(isDev ? {} : { redact: redactFields });
