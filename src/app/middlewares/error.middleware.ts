@@ -3,6 +3,8 @@ import { env } from '@/config/env.js';
 import { logger } from '@/infrastructure/logger.js';
 import { AppError } from '@/shared/app-error.js';
 
+const isProduction = env.NODE_ENV === 'production';
+
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
   let status = 500;
   let message = 'Internal Server Error';
@@ -18,7 +20,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
 
   res.status(status).json({
     success: false,
-    message: env.NODE_ENV === 'production' ? 'Internal Server Error' : message,
-    ...(env.NODE_ENV === 'production' ? {} : { stack: err instanceof Error ? err.stack : undefined }),
+    message: isProduction ? 'Internal Server Error' : message,
+    ...(isProduction ? {} : { stack: err instanceof Error ? err.stack : undefined }),
   });
 }
