@@ -20,6 +20,11 @@ export const authController = {
     res.json(success(data));
   },
 
+  async logout(req: Request, res: Response) {
+    await authService.logout(req.body);
+    res.json(success({ message: 'Logged out successfully' }));
+  },
+
   async getMe(req: Request, res: Response) {
     const auth = (req as AuthenticatedRequest).auth;
 

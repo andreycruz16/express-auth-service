@@ -47,4 +47,8 @@ export const authSessionRepository = {
   async revokeById(id: string): Promise<void> {
     await AuthSessionModel.findByIdAndUpdate(id, { revokedAt: new Date() }).exec();
   },
+
+  async deleteById(id: string): Promise<void> {
+    await AuthSessionModel.findByIdAndDelete(id).exec();
+  },
 };

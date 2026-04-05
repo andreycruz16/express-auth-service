@@ -4,7 +4,7 @@ import { authSessionRepository } from '@/modules/auth/auth.session.repository.js
 import { comparePassword, hashPassword } from '@/infrastructure/password.js';
 import { signAccessToken, verifyAccessToken } from '@/infrastructure/jwt.js';
 import { generateRefreshToken, hashRefreshToken } from '@/infrastructure/refresh-token.js';
-import type { LoginInput, RefreshInput, RegisterInput } from '@/modules/auth/auth.types.js';
+import type { LoginInput, LogoutInput, RefreshInput, RegisterInput } from '@/modules/auth/auth.types.js';
 
 const REFRESH_TOKEN_TTL_DAYS = 7;
 
@@ -94,6 +94,16 @@ export const authService = {
     await authSessionRepository.revokeById(session.id);
 
     return issueSessionTokens(account);
+  },
+
+  async logout(input: LogoutInput) {
+    const session = await authSessionRepository.findActiveByTokenHash(hashRefreshToken(input.refreshToken));
+
+    if (!session) {
+      throw new AppError('Invalid or expired refresh token', 401);
+    }
+
+    await authSessionRepository.deleteById(session.id);
   },
 
   async getMe(userId: string) {

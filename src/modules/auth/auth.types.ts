@@ -22,6 +22,10 @@ export interface RefreshInput {
   refreshToken: string;
 }
 
+export interface LogoutInput {
+  refreshToken: string;
+}
+
 export interface AuthenticatedRequest extends Request {
   auth?: {
     userId: string;
