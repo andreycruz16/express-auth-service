@@ -6,21 +6,27 @@ import { AppError } from '@/shared/app-error.js';
 const isProduction = env.NODE_ENV === 'production';
 
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
-  let status = 500;
-  let message = 'Internal Server Error';
+  const isAppError = err instanceof AppError;
+  const isKnownError = err instanceof Error;
 
-  if (err instanceof AppError) {
-    status = err.status;
-    message = err.message;
-  } else if (err instanceof Error) {
-    message = err.message;
-  }
+  const status = isAppError ? err.status : 500;
 
-  logger.error({ err, status, message }, 'Request failed');
+  const message = isProduction
+    ? (isAppError ? err.message : 'Internal Server Error')
+    : (isKnownError ? err.message : 'Unknown error');
+
+  logger.error(
+    {
+      err,
+      status,
+      ...(isKnownError ? { stack: err.stack } : {}),
+    },
+    'Request failed'
+  );
 
   res.status(status).json({
     success: false,
-    message: isProduction ? 'Internal Server Error' : message,
-    ...(isProduction ? {} : { stack: err instanceof Error ? err.stack : undefined }),
+    message,
+    ...(isProduction ? {} : { stack: isKnownError ? err.stack : undefined }),
   });
 }
