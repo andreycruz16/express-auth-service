@@ -9,6 +9,7 @@ ENV=".env.development"
 SECRETS=(
   "MONGO_URI=MONGO-URI"
   "JWT_SECRET=JWT-SECRET"
+  "ACS_EMAIL_CONNECTION_STRING=ACS-EMAIL-CONNECTION-STRING"
 )
 
 # =========================
@@ -67,5 +68,5 @@ done
 # FINAL STATUS
 # =========================
 if [[ "$ALL_SUCCESS" = true ]]; then
-  echo "✅ All secrets fetched successfully"
+  echo "All secrets fetched successfully ✅ "
 fi
