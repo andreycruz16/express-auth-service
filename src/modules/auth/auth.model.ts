@@ -30,6 +30,19 @@ const authSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    verificationEmailLastSentAt: {
+      type: Date,
+      default: null,
+    },
+    verificationEmailResendCount: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    verificationEmailResendWindowStartedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
@@ -42,6 +55,9 @@ export interface AuthDocument {
   emailVerifiedAt: Date | null;
   emailVerificationTokenHash: string | null;
   emailVerificationExpiresAt: Date | null;
+  verificationEmailLastSentAt: Date | null;
+  verificationEmailResendCount: number;
+  verificationEmailResendWindowStartedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

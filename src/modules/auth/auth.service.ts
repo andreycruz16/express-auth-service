@@ -20,6 +20,9 @@ import type {
 
 const REFRESH_TOKEN_TTL_DAYS = 7;
 const EMAIL_VERIFICATION_TTL_HOURS = env.EMAIL_VERIFICATION_TTL_HOURS;
+const VERIFICATION_RESEND_COOLDOWN_MS = 60 * 1000; // 60 seconds
+const VERIFICATION_RESEND_CAP = 5;
+const VERIFICATION_RESEND_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const toUserResponse = (account: {
   id: string;
@@ -53,6 +56,40 @@ const buildEmailVerificationUrl = (token: string) => {
   const verificationUrl = new URL('/auth/verify-email', env.APP_BASE_URL);
   verificationUrl.searchParams.set('token', token);
   return verificationUrl.toString();
+};
+
+const enforceVerificationResendLimit = async (account: {
+  id: string;
+  verificationEmailLastSentAt: Date | null;
+  verificationEmailResendCount: number;
+  verificationEmailResendWindowStartedAt: Date | null;
+}) => {
+  const now = new Date();
+
+  if (
+    account.verificationEmailLastSentAt &&
+    now.getTime() - account.verificationEmailLastSentAt.getTime() < VERIFICATION_RESEND_COOLDOWN_MS
+  ) {
+    throw new AppError('Please wait 60 seconds before requesting another verification email', 429);
+  }
+
+  const windowStartedAt = account.verificationEmailResendWindowStartedAt;
+  const isWindowExpired =
+    !windowStartedAt || now.getTime() - windowStartedAt.getTime() >= VERIFICATION_RESEND_WINDOW_MS;
+
+  const nextWindowStartedAt = isWindowExpired ? now : windowStartedAt;
+  const nextResendCount = isWindowExpired ? 1 : account.verificationEmailResendCount + 1;
+
+  if (nextResendCount > VERIFICATION_RESEND_CAP) {
+    throw new AppError('Verification email resend limit reached. Please try again in 24 hours', 429);
+  }
+
+  await authRepository.updateVerificationEmailResendState({
+    accountId: account.id,
+    verificationEmailLastSentAt: now,
+    verificationEmailResendCount: nextResendCount,
+    verificationEmailResendWindowStartedAt: nextWindowStartedAt,
+  });
 };
 
 const issueEmailVerification = async (account: { id: string; email: string }) => {
@@ -215,6 +252,7 @@ export const authService = {
       };
     }
 
+    await enforceVerificationResendLimit(account);
     await issueEmailVerification(account);
 
     return {

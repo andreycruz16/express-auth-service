@@ -8,6 +8,9 @@ export interface AuthAccount {
   emailVerifiedAt: Date | null;
   emailVerificationTokenHash: string | null;
   emailVerificationExpiresAt: Date | null;
+  verificationEmailLastSentAt: Date | null;
+  verificationEmailResendCount: number;
+  verificationEmailResendWindowStartedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

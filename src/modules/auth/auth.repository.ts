@@ -9,6 +9,9 @@ const toAuthAccount = (document: {
   emailVerifiedAt: Date | null;
   emailVerificationTokenHash: string | null;
   emailVerificationExpiresAt: Date | null;
+  verificationEmailLastSentAt: Date | null;
+  verificationEmailResendCount: number;
+  verificationEmailResendWindowStartedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }): AuthAccount => ({
@@ -19,6 +22,9 @@ const toAuthAccount = (document: {
   emailVerifiedAt: document.emailVerifiedAt,
   emailVerificationTokenHash: document.emailVerificationTokenHash,
   emailVerificationExpiresAt: document.emailVerificationExpiresAt,
+  verificationEmailLastSentAt: document.verificationEmailLastSentAt,
+  verificationEmailResendCount: document.verificationEmailResendCount,
+  verificationEmailResendWindowStartedAt: document.verificationEmailResendWindowStartedAt,
   createdAt: document.createdAt,
   updatedAt: document.updatedAt,
 });
@@ -52,6 +58,9 @@ export const authRepository = {
       emailVerifiedAt: null,
       emailVerificationTokenHash: input.emailVerificationTokenHash,
       emailVerificationExpiresAt: input.emailVerificationExpiresAt,
+      verificationEmailLastSentAt: new Date(),
+      verificationEmailResendCount: 0,
+      verificationEmailResendWindowStartedAt: null,
     });
 
     return toAuthAccount(account);
@@ -74,6 +83,22 @@ export const authRepository = {
       emailVerifiedAt: new Date(),
       emailVerificationTokenHash: null,
       emailVerificationExpiresAt: null,
+      verificationEmailLastSentAt: null,
+      verificationEmailResendCount: 0,
+      verificationEmailResendWindowStartedAt: null,
+    }).exec();
+  },
+
+  async updateVerificationEmailResendState(input: {
+    accountId: string;
+    verificationEmailLastSentAt: Date;
+    verificationEmailResendCount: number;
+    verificationEmailResendWindowStartedAt: Date;
+  }): Promise<void> {
+    await AuthModel.findByIdAndUpdate(input.accountId, {
+      verificationEmailLastSentAt: input.verificationEmailLastSentAt,
+      verificationEmailResendCount: input.verificationEmailResendCount,
+      verificationEmailResendWindowStartedAt: input.verificationEmailResendWindowStartedAt,
     }).exec();
   },
 };
