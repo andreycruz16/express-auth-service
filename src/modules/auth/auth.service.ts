@@ -1,21 +1,38 @@
 import { AppError } from '@/shared/app-error.js';
+import { env } from '@/config/env.js';
 import { authRepository } from '@/modules/auth/auth.repository.js';
 import { authSessionRepository } from '@/modules/auth/auth.session.repository.js';
 import { comparePassword, hashPassword } from '@/infrastructure/password.js';
 import { signAccessToken, verifyAccessToken } from '@/infrastructure/jwt.js';
 import { generateRefreshToken, hashRefreshToken } from '@/infrastructure/refresh-token.js';
-import type { LoginInput, LogoutInput, RefreshInput, RegisterInput } from '@/modules/auth/auth.types.js';
+import { sendVerificationEmail } from '@/infrastructure/email.js';
+import {
+  generateEmailVerificationToken,
+  hashEmailVerificationToken,
+} from '@/infrastructure/email-verification.js';
+import type {
+  LoginInput,
+  LogoutInput,
+  RefreshInput,
+  RegisterInput,
+  ResendVerificationInput,
+} from '@/modules/auth/auth.types.js';
 
 const REFRESH_TOKEN_TTL_DAYS = 7;
+const EMAIL_VERIFICATION_TTL_HOURS = env.EMAIL_VERIFICATION_TTL_HOURS;
 
 const toUserResponse = (account: {
   id: string;
   email: string;
+  emailVerified: boolean;
+  emailVerifiedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }) => ({
   id: account.id,
   email: account.email,
+  emailVerified: account.emailVerified,
+  emailVerifiedAt: account.emailVerifiedAt?.toISOString() ?? null,
   createdAt: account.createdAt.toISOString(),
   updatedAt: account.updatedAt.toISOString(),
 });
@@ -26,9 +43,37 @@ const getRefreshTokenExpiry = () => {
   return expiresAt;
 };
 
+const getEmailVerificationExpiry = () => {
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + EMAIL_VERIFICATION_TTL_HOURS);
+  return expiresAt;
+};
+
+const buildEmailVerificationUrl = (token: string) => {
+  const verificationUrl = new URL('/auth/verify-email', env.APP_BASE_URL);
+  verificationUrl.searchParams.set('token', token);
+  return verificationUrl.toString();
+};
+
+const issueEmailVerification = async (account: { id: string; email: string }) => {
+  const emailVerificationToken = generateEmailVerificationToken();
+  const emailVerificationTokenHash = hashEmailVerificationToken(emailVerificationToken);
+  const emailVerificationExpiresAt = getEmailVerificationExpiry();
+
+  await authRepository.updateEmailVerificationToken({
+    accountId: account.id,
+    emailVerificationTokenHash,
+    emailVerificationExpiresAt,
+  });
+
+  await sendVerificationEmail(account.email, buildEmailVerificationUrl(emailVerificationToken));
+};
+
 const issueSessionTokens = async (account: {
   id: string;
   email: string;
+  emailVerified: boolean;
+  emailVerifiedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }) => {
@@ -57,9 +102,22 @@ export const authService = {
     }
 
     const passwordHash = await hashPassword(input.password);
-    const account = await authRepository.create({ email: input.email, passwordHash });
+    const emailVerificationToken = generateEmailVerificationToken();
+    const emailVerificationTokenHash = hashEmailVerificationToken(emailVerificationToken);
+    const emailVerificationExpiresAt = getEmailVerificationExpiry();
+    const account = await authRepository.create({
+      email: input.email,
+      passwordHash,
+      emailVerificationTokenHash,
+      emailVerificationExpiresAt,
+    });
 
-    return toUserResponse(account);
+    await sendVerificationEmail(account.email, buildEmailVerificationUrl(emailVerificationToken));
+
+    return {
+      user: toUserResponse(account),
+      message: 'Account created. Please verify your email address.',
+    };
   },
 
   async login(input: LoginInput) {
@@ -73,6 +131,10 @@ export const authService = {
 
     if (!passwordMatches) {
       throw new AppError('Invalid credentials', 401);
+    }
+
+    if (!account.emailVerified) {
+      throw new AppError('Please verify your email before logging in', 403);
     }
 
     return issueSessionTokens(account);
@@ -114,6 +176,50 @@ export const authService = {
     }
 
     return toUserResponse(account);
+  },
+
+  async verifyEmail(token: string) {
+    const account = await authRepository.findByVerificationTokenHash(hashEmailVerificationToken(token));
+
+    if (!account || !account.emailVerificationExpiresAt) {
+      throw new AppError('Invalid verification token', 400);
+    }
+
+    if (account.emailVerified) {
+      return {
+        message: 'Email is already verified.',
+      };
+    }
+
+    if (account.emailVerificationExpiresAt.getTime() < Date.now()) {
+      throw new AppError('Verification token has expired', 400);
+    }
+
+    await authRepository.markEmailVerified(account.id);
+
+    return {
+      message: 'Email verified successfully.',
+    };
+  },
+
+  async resendVerification(input: ResendVerificationInput) {
+    const account = await authRepository.findByEmail(input.email);
+
+    if (!account) {
+      throw new AppError('User not found', 404);
+    }
+
+    if (account.emailVerified) {
+      return {
+        message: 'Email is already verified.',
+      };
+    }
+
+    await issueEmailVerification(account);
+
+    return {
+      message: 'Verification email sent.',
+    };
   },
 
   async authenticate(token: string) {

@@ -12,3 +12,7 @@ export const refreshSchema = z.object({
 });
 
 export const logoutSchema = refreshSchema;
+
+export const resendVerificationSchema = z.object({
+  email: z.email(),
+});

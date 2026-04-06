@@ -5,12 +5,20 @@ const toAuthAccount = (document: {
   _id: { toString(): string };
   email: string;
   passwordHash: string;
+  emailVerified: boolean;
+  emailVerifiedAt: Date | null;
+  emailVerificationTokenHash: string | null;
+  emailVerificationExpiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }): AuthAccount => ({
   id: document._id.toString(),
   email: document.email,
   passwordHash: document.passwordHash,
+  emailVerified: document.emailVerified,
+  emailVerifiedAt: document.emailVerifiedAt,
+  emailVerificationTokenHash: document.emailVerificationTokenHash,
+  emailVerificationExpiresAt: document.emailVerificationExpiresAt,
   createdAt: document.createdAt,
   updatedAt: document.updatedAt,
 });
@@ -26,12 +34,46 @@ export const authRepository = {
     return account ? toAuthAccount(account) : null;
   },
 
-  async create(input: { email: string; passwordHash: string }): Promise<AuthAccount> {
+  async findByVerificationTokenHash(tokenHash: string): Promise<AuthAccount | null> {
+    const account = await AuthModel.findOne({ emailVerificationTokenHash: tokenHash }).exec();
+    return account ? toAuthAccount(account) : null;
+  },
+
+  async create(input: {
+    email: string;
+    passwordHash: string;
+    emailVerificationTokenHash: string;
+    emailVerificationExpiresAt: Date;
+  }): Promise<AuthAccount> {
     const account = await AuthModel.create({
       email: input.email.toLowerCase(),
       passwordHash: input.passwordHash,
+      emailVerified: false,
+      emailVerifiedAt: null,
+      emailVerificationTokenHash: input.emailVerificationTokenHash,
+      emailVerificationExpiresAt: input.emailVerificationExpiresAt,
     });
 
     return toAuthAccount(account);
+  },
+
+  async updateEmailVerificationToken(input: {
+    accountId: string;
+    emailVerificationTokenHash: string;
+    emailVerificationExpiresAt: Date;
+  }): Promise<void> {
+    await AuthModel.findByIdAndUpdate(input.accountId, {
+      emailVerificationTokenHash: input.emailVerificationTokenHash,
+      emailVerificationExpiresAt: input.emailVerificationExpiresAt,
+    }).exec();
+  },
+
+  async markEmailVerified(accountId: string): Promise<void> {
+    await AuthModel.findByIdAndUpdate(accountId, {
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
+      emailVerificationTokenHash: null,
+      emailVerificationExpiresAt: null,
+    }).exec();
   },
 };

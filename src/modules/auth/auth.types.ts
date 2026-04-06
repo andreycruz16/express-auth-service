@@ -4,6 +4,10 @@ export interface AuthAccount {
   id: string;
   email: string;
   passwordHash: string;
+  emailVerified: boolean;
+  emailVerifiedAt: Date | null;
+  emailVerificationTokenHash: string | null;
+  emailVerificationExpiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,6 +28,10 @@ export interface RefreshInput {
 
 export interface LogoutInput {
   refreshToken: string;
+}
+
+export interface ResendVerificationInput {
+  email: string;
 }
 
 export interface AuthenticatedRequest extends Request {

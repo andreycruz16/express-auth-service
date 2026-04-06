@@ -13,6 +13,23 @@ const authSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    emailVerified: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
+    emailVerifiedAt: {
+      type: Date,
+      default: null,
+    },
+    emailVerificationTokenHash: {
+      type: String,
+      default: null,
+    },
+    emailVerificationExpiresAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
@@ -21,6 +38,10 @@ export interface AuthDocument {
   _id: mongoose.Types.ObjectId;
   email: string;
   passwordHash: string;
+  emailVerified: boolean;
+  emailVerifiedAt: Date | null;
+  emailVerificationTokenHash: string | null;
+  emailVerificationExpiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
