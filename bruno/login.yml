@@ -1,0 +1,32 @@
+info:
+  name: /login
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: http://localhost:3000/auth/login
+  body:
+    type: json
+    data: |-
+      {
+        "email": "markandreydelacruz@ymail.com",
+        "password": "mark123!"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const response = res.getBody();
+        const accessToken = response?.data?.accessToken
+        const refreshToken = response?.data?.refreshToken
+        bru.setVar("accessToken", accessToken);
+        bru.setVar("refreshToken", refreshToken);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
