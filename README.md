@@ -81,118 +81,35 @@ Base URL:
 http://localhost:3000
 ```
 
-### Health Check
+### Endpoint Summary
 
-`GET /health`
+| Method | Path | Auth | Request | Success response | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `GET` | `/health` | None | No body | `{ "status": "ok" }` | Basic service health check |
+| `POST` | `/auth/register` | None | `{ "email": "user@example.com", "password": "secret123" }` | `{ "success": true, "data": { "user": { "id": "account-id", "email": "user@example.com", "emailVerified": false, "emailVerifiedAt": null, "createdAt": "2026-04-05T00:00:00.000Z", "updatedAt": "2026-04-05T00:00:00.000Z" }, "message": "Account created. Please verify your email address." } }` | Creates the account and sends a verification email |
+| `GET` | `/auth/verify-email?token=...` | None | Query param: `token` | `{ "success": true, "data": { "message": "Email verified successfully." } }` | Fails if the token is missing, invalid, or expired |
+| `POST` | `/auth/resend-verification` | None | `{ "email": "user@example.com" }` | `{ "success": true, "data": { "message": "Verification email sent." } }` | For unverified accounts only; 60-second cooldown and 5-request cap per 24 hours |
+| `POST` | `/auth/login` | None | `{ "email": "user@example.com", "password": "secret123" }` | `{ "success": true, "data": { "user": { "id": "account-id", "email": "user@example.com", "emailVerified": true, "emailVerifiedAt": "2026-04-05T00:10:00.000Z", "createdAt": "2026-04-05T00:00:00.000Z", "updatedAt": "2026-04-05T00:10:00.000Z" }, "accessToken": "jwt-access-token", "refreshToken": "plain-text-refresh-token" } }` | Login is blocked until email is verified |
+| `POST` | `/auth/refresh` | None | `{ "refreshToken": "plain-text-refresh-token" }` | `{ "success": true, "data": { "user": { ... }, "accessToken": "new-jwt-access-token", "refreshToken": "new-plain-text-refresh-token" } }` | Rotates the session by revoking the old refresh token and issuing a new pair |
+| `POST` | `/auth/logout` | None | `{ "refreshToken": "plain-text-refresh-token" }` | `{ "success": true, "data": { "message": "Logged out successfully" } }` | Invalidates the active refresh-token session |
+| `GET` | `/auth/me` | `Authorization: Bearer <accessToken>` | No body | `{ "success": true, "data": { "id": "account-id", "email": "user@example.com", "emailVerified": true, "emailVerifiedAt": "2026-04-05T00:10:00.000Z", "createdAt": "2026-04-05T00:00:00.000Z", "updatedAt": "2026-04-05T00:10:00.000Z" } }` | Returns the currently authenticated user |
 
-Response:
-
-```json
-{
-  "status": "ok"
-}
-```
-
-### Auth Endpoints
-
-#### Register
-
-`POST /auth/register`
-
-Body:
-
-```json
-{
-  "email": "user@example.com",
-  "password": "secret123"
-}
-```
-
-Success response:
+All auth endpoints except `GET /health` use the standard success envelope:
 
 ```json
 {
   "success": true,
-  "data": {
-    "id": "account-id",
-    "email": "user@example.com",
-    "createdAt": "2026-04-05T00:00:00.000Z",
-    "updatedAt": "2026-04-05T00:00:00.000Z"
-  }
+  "data": {}
 }
 ```
 
-#### Login
-
-`POST /auth/login`
-
-Body:
+Error responses use:
 
 ```json
 {
-  "email": "user@example.com",
-  "password": "secret123"
+  "success": false,
+  "message": "..."
 }
-```
-
-Success response:
-
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "account-id",
-      "email": "user@example.com",
-      "createdAt": "2026-04-05T00:00:00.000Z",
-      "updatedAt": "2026-04-05T00:00:00.000Z"
-    },
-    "accessToken": "jwt-access-token",
-    "refreshToken": "plain-text-refresh-token"
-  }
-}
-```
-
-Notes:
-
-- Access tokens expire after `15m`
-- Refresh tokens are stored as hashes in MongoDB
-- Refresh sessions currently expire after `7` days
-
-#### Refresh Access
-
-`POST /auth/refresh`
-
-Body:
-
-```json
-{
-  "refreshToken": "plain-text-refresh-token"
-}
-```
-
-This rotates the session by revoking the current refresh token and returning a new access token plus refresh token.
-
-#### Logout
-
-`POST /auth/logout`
-
-Body:
-
-```json
-{
-  "refreshToken": "plain-text-refresh-token"
-}
-```
-
-#### Get Current User
-
-`GET /auth/me`
-
-Header:
-
-```text
-Authorization: Bearer <accessToken>
 ```
 
 ## Validation Rules
